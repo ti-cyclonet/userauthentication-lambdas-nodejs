@@ -1,0 +1,103 @@
+service: aos-greenmovil-userauth-api
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage}
+  region: ${param:region}
+  memorySize: ${param:memorySize}
+  timeout: ${param:timeout}
+  
+  httpApi:
+    cors: 
+        allowedOrigins:
+          - "*"
+        allowedHeaders:
+          - "*"
+        allowedMethods:
+          - "*"
+        allowCredentials: false
+        maxAge: 2 # in seconds
+    authorizers:
+      serviceAuthorizer:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_MWPj7HBtg        
+        audience:
+          - dev-userpool-client
+  
+  environment:
+    REGION:  ${param:region}
+    USERPOOLID:  ${param:cognitoUserpoolId}
+    ACCESSKEY:  ${param:cognitoAK}
+    SECRET:  ${param:cognitoSAK}
+    CLIENTID:  ${param:cognitoClientId}
+
+functions:
+  login:
+    handler: auth/login.handler
+    events:
+      - httpApi:
+          path: /auth/login
+          method: post
+  logout:
+    handler: auth/logout.handler
+    events:
+      - httpApi:
+          path: /auth/logout
+          method: post        
+  userroles:
+    handler: auth/roles.handler
+    events:
+      - httpApi:
+          path: /auth/roles/{id}
+          method: get
+          
+  roles:
+    handler: users/roles.handler
+    events:
+      - httpApi:
+          path: /users/roles
+          method: get
+  users:
+    handler: users/users.handler
+    events:
+      - httpApi:
+          path: /users
+          method: get
+          #authorizer: 
+          #  name: serviceAuthorizer
+  register:
+    handler: users/register.handler
+    events:
+      - httpApi:
+          path: /users
+          method: post
+  update:
+    handler: users/update.handler
+    events:
+      - httpApi:
+          path: /users
+          method: put  
+  delete:
+    handler: users/delete.handler
+    events:
+      - httpApi:
+          path: /users/{id}
+          method: delete
+  user:
+    handler: users/user.handler
+    events:
+      - httpApi:
+          path: /users/{id}
+          method: get
+
+
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3013
